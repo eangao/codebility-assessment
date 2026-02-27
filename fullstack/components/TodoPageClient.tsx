@@ -69,7 +69,10 @@ export default function TodoPageClient() {
         body: JSON.stringify({ completed: !todo.completed }),
       });
 
-      if (!response.ok) throw new Error("Failed to update todo");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update todo");
+      }
       const data = await response.json();
       setTodos(todos.map((t) => (t.id === id ? data.data : t)));
     } catch (error) {

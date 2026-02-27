@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,11 @@ export default function AuthForm({ mode, onSubmit, error }: AuthFormProps) {
     name: "",
   });
 
+  // Sync error prop with formError state
+  useEffect(() => {
+    setFormError(error || null);
+  }, [error]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -42,18 +47,27 @@ export default function AuthForm({ mode, onSubmit, error }: AuthFormProps) {
     e.preventDefault();
     setFormError(null);
 
+    // Validate required fields
     if (!formData.email || !formData.password) {
       setFormError("Email and password are required");
       return;
     }
 
+    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setFormError("Please enter a valid email address");
       return;
     }
 
-    if (mode === "signup" && !formData.name) {
+    // Validate password length
+    if (formData.password.length < 6) {
+      setFormError("Password must be at least 6 characters");
+      return;
+    }
+
+    // Validate name for signup
+    if (mode === "signup" && !formData.name.trim()) {
       setFormError("Name is required");
       return;
     }
@@ -101,8 +115,8 @@ export default function AuthForm({ mode, onSubmit, error }: AuthFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
-            <div className="rounded-md bg-destructive/10 p-3">
-              <p className="text-sm text-destructive">{formError}</p>
+            <div className="rounded-md bg-destructive/10 p-3 border border-destructive/20">
+              <p className="text-sm font-medium text-destructive">{formError}</p>
             </div>
           )}
 
@@ -146,7 +160,13 @@ export default function AuthForm({ mode, onSubmit, error }: AuthFormProps) {
               onChange={handleChange}
               disabled={isLoading}
               required
+              minLength={6}
             />
+            {mode === "signup" && (
+              <p className="text-xs text-muted-foreground">
+                Must be at least 6 characters
+              </p>
+            )}
           </div>
 
           <Button

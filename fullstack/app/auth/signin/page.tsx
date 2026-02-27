@@ -13,18 +13,30 @@ interface SignInData {
 function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
 
+  // Read URL params once to determine initial state
+  const callbackError = searchParams.get("error");
+  const registered = searchParams.get("registered");
+
+  const [error, setError] = useState<string | null>(
+    callbackError ? "Invalid credentials" : null
+  );
+  const [successMessage, setSuccessMessage] = useState<string | null>(
+    registered === "true" ? "Account created successfully! Please sign in." : null
+  );
+
+  // Clear success message after 5 seconds (only run once on mount if registered)
   useEffect(() => {
-    const callbackError = searchParams.get("error");
-    if (callbackError) {
-      setError("Invalid credentials");
+    if (registered === "true") {
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
+      return () => clearTimeout(timer);
     }
-  }, [searchParams]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (data: SignInData) => {
     try {
       setError(null);
+      setSuccessMessage(null);
 
       const result = await signIn("credentials", {
         email: data.email,
@@ -32,12 +44,14 @@ function SignInContent() {
         redirect: false,
       });
 
-      if (!result?.ok) {
-        setError("Invalid credentials");
+      // Check for error - NextAuth v5 bug: ok can be true even with error
+      if (result?.error || !result?.ok) {
+        setError("Invalid email or password. Please try again.");
         return;
       }
 
       router.push("/todos");
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An error occurred during sign in"
@@ -46,11 +60,18 @@ function SignInContent() {
   };
 
   return (
-    <AuthForm
-      mode="signin"
-      onSubmit={handleSubmit}
-      error={error || undefined}
-    />
+    <div className="w-full max-w-md">
+      {successMessage && (
+        <div className="mb-4 rounded-md bg-green-50 p-3 border border-green-200">
+          <p className="text-sm text-green-800">{successMessage}</p>
+        </div>
+      )}
+      <AuthForm
+        mode="signin"
+        onSubmit={handleSubmit}
+        error={error || undefined}
+      />
+    </div>
   );
 }
 
