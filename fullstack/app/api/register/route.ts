@@ -24,6 +24,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
     if (trimmedPassword.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters" },
